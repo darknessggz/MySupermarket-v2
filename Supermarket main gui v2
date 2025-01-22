@@ -1,0 +1,257 @@
+-- Create the ScreenGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "CrazyScriptsGui"
+gui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Header Frame
+local headerFrame = Instance.new("Frame")
+headerFrame.Name = "HeaderFrame"
+headerFrame.Size = UDim2.new(0.3, 0, 0.08, 0)
+headerFrame.Position = UDim2.new(0.35, 0, 0.01, 0)
+headerFrame.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+headerFrame.BorderSizePixel = 0
+headerFrame.Parent = gui
+headerFrame.BackgroundTransparency = 0.4
+
+-- Title Text (centered)
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "CrazyScripts"
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.Parent = headerFrame
+
+-- Minimize Button
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Size = UDim2.new(0.15, 0, 0.8, 0)
+minimizeButton.Position = UDim2.new(0.825, 0, 0.1, 0)
+minimizeButton.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+minimizeButton.Text = "-"
+minimizeButton.TextSize = 18
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+minimizeButton.BorderSizePixel = 0
+minimizeButton.Parent = headerFrame
+
+-- Add rounded corners to minimize button
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0.5, 0)
+minimizeCorner.Parent = minimizeButton
+
+-- Content Frame
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(0.3, 0, 0.3, 0)  -- Increased height for all three buttons
+contentFrame.Position = UDim2.new(0.35, 0, 0.09, 0)
+contentFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+contentFrame.BorderSizePixel = 0
+contentFrame.ClipsDescendants = true 
+contentFrame.Visible = true
+contentFrame.Parent = gui
+
+-- UIListLayout for dynamic resizing
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 2) 
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = contentFrame
+
+-- Function to add a new TextLabel with a round toggle button
+local function addTextAndToggle(text, toggleFunction)
+    -- Create a frame for the TextLabel and button
+    local itemFrame = Instance.new("Frame")
+    itemFrame.Size = UDim2.new(1, 0, 0, 30)
+    itemFrame.BackgroundTransparency = 1
+    itemFrame.Parent = contentFrame
+
+    -- TextLabel with background
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    textLabel.Position = UDim2.new(0, 0, 0, 0)
+    textLabel.BackgroundColor3 = Color3.new(0.3, 0.3, 0.3)
+    textLabel.BorderSizePixel = 0
+    textLabel.Text = text
+    textLabel.TextSize = 14
+    textLabel.Font = Enum.Font.Gotham
+    textLabel.TextColor3 = Color3.new(1, 1, 1)
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.Parent = itemFrame
+
+    -- Add rounded corners to TextLabel
+    local textCorner = Instance.new("UICorner")
+    textCorner.CornerRadius = UDim.new(0.2, 0)
+    textCorner.Parent = textLabel
+
+    -- Round Toggle Button
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 20, 0, 20)
+    toggleButton.Position = UDim2.new(0.8, 0, 0.5, -10)
+    toggleButton.BackgroundColor3 = Color3.new(1, 0, 0)
+    toggleButton.BorderSizePixel = 0
+    toggleButton.Text = ""
+    toggleButton.Parent = itemFrame
+
+    -- Add rounded corners to Toggle Button
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(1, 0)
+    toggleCorner.Parent = toggleButton
+
+    -- Toggle button functionality
+    toggleButton.MouseButton1Click:Connect(function()
+        if toggleButton.BackgroundColor3 == Color3.new(1, 0, 0) then
+            toggleButton.BackgroundColor3 = Color3.new(0, 1, 0)
+            toggleFunction(true)  -- Start the process
+        else
+            toggleButton.BackgroundColor3 = Color3.new(1, 0, 0)
+            toggleFunction(false)  -- Stop the process
+        end
+    end)
+end
+
+-- Minimize/Maximize functionality
+local minimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    contentFrame.Visible = not minimized
+    minimizeButton.Text = minimized and "+" or "-"
+end)
+
+-- Auto Restock functionality
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+local autoRestockRunning = false
+
+-- Start the Auto Restock process
+local function startAutoRestock(enable)
+    if enable and not autoRestockRunning then
+        autoRestockRunning = true
+        while autoRestockRunning do
+            local initialPosition = humanoidRootPart.Position
+            local restockFolders = game:GetService("Workspace").Zhangxu.UIUsePart:GetChildren()
+
+            local itemsProcessed = false  -- Flag to track if any item was processed
+
+            -- Iterate through all restock folders
+            for _, folder in ipairs(restockFolders) do
+                if #folder:GetChildren() > 0 then
+                    -- Find the first part inside the folder
+                    local firstPart = nil
+                    for _, child in ipairs(folder:GetChildren()) do
+                        if child:IsA("BasePart") then
+                            firstPart = child
+                            break
+                        end
+                    end
+
+                    if firstPart then
+                        -- Check for the Task subfolder and UITask (BillboardGui) inside it
+                        local taskFolder = folder:FindFirstChild("Task")
+                        if taskFolder then
+                            local uiTask = taskFolder:FindFirstChild("UITask")
+                            if uiTask and uiTask:IsA("BillboardGui") then
+                                -- Check if UITask is enabled
+                                if uiTask.Enabled then
+                                    -- Teleport the player to the part's position
+                                    humanoidRootPart.CFrame = firstPart.CFrame
+
+                                    -- Add a very short wait to ensure teleportation is processed
+                                    wait(0.1)
+
+                                    -- Trigger the server event with the folder's name
+                                    local itemName = tonumber(folder.Name)
+                                    if itemName then
+                                        game:GetService("ReplicatedStorage").Scene.SceneManager.PlayerUse:FireServer(itemName)
+                                    else
+                                        warn("Invalid item name: " .. tostring(folder.Name))
+                                    end
+
+                                    -- Mark that an item has been processed, so we can teleport back after this loop
+                                    itemsProcessed = true
+                                    break  -- Stop checking other items once one is processed
+                                end
+                            else
+                                warn("Skipping item due to UITask (BillboardGui) not found: " .. folder.Name)
+                            end
+                        else
+                            warn("No Task folder found in: " .. folder.Name)
+                        end
+                    else
+                        warn("No valid part found in folder: " .. folder.Name)
+                    end
+                else
+                    warn("Folder is empty: " .. folder.Name)
+                end
+            end
+
+            -- If any teleportation happened, return to the original position
+            if itemsProcessed then
+                -- Wait a bit to give the game time to process the teleportation
+                wait(0.1)  -- Adjust the wait time if needed
+
+                -- Return the player to the original position
+                humanoidRootPart.CFrame = CFrame.new(initialPosition)
+            end
+
+            -- Wait a short time before starting the next cycle to avoid overloading the game
+            wait(0.1)  -- Adjust the wait time if needed
+        end
+    elseif not enable then
+        autoRestockRunning = false
+    end
+end
+
+-- Cart 1 functionality
+local cart1Running = false
+
+-- Start the Cart 1 process
+local function startCart1(enable)
+    if enable and not cart1Running then
+        cart1Running = true
+        while cart1Running do
+            print("Inside loop")
+            local part1 = game:GetService("Workspace").Moon.HelpPoints.BuildAreaPoints.BuildBlocks.BlockPark_1_46_5.BlockModel
+            humanoidRootPart.CFrame = part1.CFrame
+            print("Moved to part1")
+            wait(0.3)
+            local args = {[1] = 4}
+            game:GetService("ReplicatedStorage"):WaitForChild("Scene"):WaitForChild("SceneManager"):WaitForChild("PlayerTake"):FireServer(unpack(args))
+            print("Fired PlayerTake")
+            wait(0.3)
+            local part2 = game:GetService("Workspace").Moon.HelpPoints.BuildAreaPoints.BuildBlocks.BlockPark_1_36_5.BlockModel
+            humanoidRootPart.CFrame = part2.CFrame
+            print("Moved to part2")
+            wait(0.3)
+            local args = {[1] = 3}
+            game:GetService("ReplicatedStorage"):WaitForChild("Scene"):WaitForChild("SceneManager"):WaitForChild("PlayerReturn"):FireServer(unpack(args))
+            print("Fired PlayerReturn")
+            wait(0.3)
+        end
+    elseif not enable then
+        cart1Running = false
+    end
+end
+
+-- Walk Speed functionality
+local originalWalkSpeed = humanoid.WalkSpeed  -- Store the original walk speed
+
+-- Start the Walk Speed process
+local function startWalkSpeed(enable)
+    if enable then
+        humanoid.WalkSpeed = 40  -- Set walk speed to 40
+    else
+        humanoid.WalkSpeed = originalWalkSpeed  -- Reset walk speed to original
+    end
+end
+
+-- Add initial content and link to toggle functions
+addTextAndToggle("  Auto Restock", startAutoRestock)
+addTextAndToggle("  Cart 1", startCart1)
+addTextAndToggle("  Walk Speed", startWalkSpeed)
